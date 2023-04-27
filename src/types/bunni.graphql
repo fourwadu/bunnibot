@@ -1,0 +1,35 @@
+query BunniQuery {
+	pools {
+		fee
+		tick
+		address
+		liquidity
+		sqrtPriceX96
+		token0
+		token1
+		token0Price
+		token1Price
+		totalValueLockedToken0
+		totalValueLockedToken1
+		totalVolumeToken0
+		totalVolumeToken1
+		totalFeesToken0
+		totalFeesToken1
+		bunniTokens {
+			address
+			tickLower
+			tickUpper
+			gauge
+		}
+	}
+	bunni(id: "0xb5087f95643a9a4069471a28d32c569d9bd57fe4") {
+		protocolFee
+	}
+	block: pools(block: { number: 17131962 }) {
+		address
+		totalVolumeToken0
+		totalVolumeToken1
+		totalFeesToken0
+		totalFeesToken1
+	}
+}

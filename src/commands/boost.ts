@@ -6,13 +6,12 @@ import {
 	AutocompleteContext,
 } from "slash-create";
 import BunniBot from "../client";
-import { getAutocompleteGauge } from "../web3/gauge";
 
 export default class MaxBoostCommand extends SlashCommand<BunniBot> {
 	constructor(creator: SlashCreator) {
 		super(creator, {
 			name: "maxboost",
-			description: "Calculates max boost for any Bunni gauge.",
+			description: "Calculates boost for any Bunni gauge.",
 			options: [
 				{
 					type: CommandOptionType.STRING,
@@ -28,6 +27,14 @@ export default class MaxBoostCommand extends SlashCommand<BunniBot> {
 					required: true,
 				},
 				{
+					type: CommandOptionType.NUMBER,
+					name: "target",
+					description: "Target boost for pool (1, 10)",
+					max_value: 10,
+					min_value: 1,
+					required: false,
+				},
+				{
 					type: CommandOptionType.BOOLEAN,
 					name: "anon",
 					description: "Hide your address and results",
@@ -39,10 +46,10 @@ export default class MaxBoostCommand extends SlashCommand<BunniBot> {
 		this.filePath = __filename;
 	}
 
-	async autocomplete(ctx: AutocompleteContext): Promise<void> {
-		const value = ctx.options[ctx.focused];
-		ctx.sendResults(getAutocompleteGauge(this.client.gauges, value));
-	}
+	// async autocomplete(ctx: AutocompleteContext): Promise<void> {
+	// 	const value = ctx.options[ctx.focused];
+	// 	ctx.sendResults(getAutocompleteGauge(this.client.gauges, value));
+	// }
 
 	onError(err: Error, ctx: CommandContext) {
 		this.client.logger.warn(
@@ -51,6 +58,11 @@ export default class MaxBoostCommand extends SlashCommand<BunniBot> {
 	}
 
 	async run(ctx: CommandContext) {
-		const { gauge, address, anon } = ctx.options;
+		const { gauge, address, target, anon } = ctx.options as {
+			gauge: string;
+			address: string;
+			target: number | undefined;
+			anon: boolean;
+		};
 	}
 }

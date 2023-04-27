@@ -22,4 +22,4 @@ creator
 	.registerCommandsIn(path.join(__dirname, "commands"))
 	.syncCommands();
 
-client.login(ENV.TOKEN);
+// client.login(ENV.TOKEN);

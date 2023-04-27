@@ -1,13 +1,38 @@
 import { Logger } from "winston";
-import { Client, ClientOptions } from "discord.js";
+import { Client, ClientOptions, TextChannel } from "discord.js";
 import { CommandContext } from "slash-create";
 
-import { GaugeData, getGauges } from "./web3/gauge";
+import ENV from "./utils/env";
 import { makeLogger } from "./utils/logger";
+import BaseMonitor from "./monitors/structures/base";
+import BribeMonitor from "./monitors/bribes";
+import BunniGraphPoller from "./monitors/bunni-graph";
+import { BunniQueryQuery } from "../.graphclient";
+import Poller from "./monitors/structures/poller";
+
+const BUNNI_MONITORS = {
+	BRIBE_MONITOR: {
+		channels: ["1095205441430097942"],
+		class: BribeMonitor,
+	},
+	BUNNI_MONITOR: {
+		channels: ["1095205441430097942"],
+		class: BunniGraphPoller,
+	},
+};
+
+type BunniMonitors = {
+	[name in keyof typeof BUNNI_MONITORS]: {
+		channels: TextChannel[];
+		monitor: BaseMonitor<any> | Poller<any>;
+	};
+};
 
 export default class BunniBot extends Client {
-	public gauges: GaugeData[] = [];
 	public logger: Logger = makeLogger("client");
+	private bunniMonitors?: BunniMonitors;
+
+	public pools: BunniQueryQuery["pools"] = [];
 
 	constructor(options: ClientOptions) {
 		super(options);
@@ -19,8 +44,49 @@ export default class BunniBot extends Client {
 		});
 	}
 
+	private panic(error: Error) {
+		this.logger.error(error);
+		this.destroy();
+		return error;
+	}
+
+	private async initializeChannels() {
+		const bunniMonitors = {} as BunniMonitors;
+		await Promise.all(
+			Object.entries(BUNNI_MONITORS).map(async ([name, details]) => {
+				const channels = await Promise.all(
+					details.channels.map(async (id) => {
+						const channel = await this.channels.fetch(id);
+
+						if (!channel?.isTextBased() || !(channel instanceof TextChannel)) {
+							throw this.panic(new Error("Invalid channel " + name + " " + id));
+						}
+						return channel;
+					})
+				);
+
+				bunniMonitors[name as keyof typeof BUNNI_MONITORS] = {
+					channels,
+					monitor: new details.class(this, name, channels),
+				};
+			})
+		);
+
+		this.bunniMonitors = bunniMonitors;
+	}
+
+	async startAllMonitors() {
+		if (!this.bunniMonitors) throw new Error("No monitors found");
+		Object.values(this.bunniMonitors).forEach((details) => {
+			details.monitor.start();
+		});
+	}
+
 	async initialize() {
-		this.gauges = await getGauges();
+		await this.login(ENV.TOKEN);
 		this.logger.info("Initialized as " + this.user?.username);
+
+		await this.initializeChannels();
+		this.startAllMonitors();
 	}
 }

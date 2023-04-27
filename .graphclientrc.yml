@@ -1,0 +1,8 @@
+sources:
+  - name: bunniapp
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/bunniapp/bunni-mainnet
+
+documents:
+  - ./src/bunni.graphql
